@@ -199,10 +199,16 @@ const normaliseVariants = (variants: any[], productSku: string): any[] => {
       option,
       value,
       ...(raw?.price === undefined || raw?.price === null ? {} : { price: raw.price }),
+      ...(raw?.moq !== undefined && raw?.moq !== null && !isNaN(Number(raw.moq))
+        ? { moq: Number(raw.moq) }
+        : {}),
       ...(raw?.stock === undefined || raw?.stock === null || raw?.stock === ''
         ? {}
         : { stock: String(raw.stock) }),
       ...(raw?.status ? { status: raw.status } : {}),
+      ...(raw?.title ? { title: String(raw.title).trim() } : {}),
+      ...(Array.isArray(raw?.images) ? { images: raw.images } : {}),
+      ...(Array.isArray(raw?.videos) ? { videos: raw.videos } : {}),
     };
 
     /* Empty strings are not stored: an absent description is absent, not "". */
@@ -451,6 +457,21 @@ export const createProduct = async (
         ? countedCapacities.reduce((sum: number, n: number) => sum + n, 0)
         : undefined);
 
+    let stockStatus = body.stockStatus;
+    if (!stockStatus || stockStatus === 'Unspecified') {
+      if (variants && variants.length > 0) {
+        const anyAvailable = variants.some((v: any) => {
+          const s = String(v.status || '').toLowerCase();
+          return !s.includes('out') && !s.includes('unavail') && !s.includes('sold');
+        });
+        stockStatus = anyAvailable ? 'In Stock' : 'Out of Stock';
+      } else if (stock !== undefined && stock !== null) {
+        stockStatus = deriveStockStatus(stock, body.reorderPoint);
+      } else {
+        stockStatus = 'In Stock';
+      }
+    }
+
     const now = new Date().toISOString();
     const newProduct: Product = {
       ...body,
@@ -460,8 +481,9 @@ export const createProduct = async (
       category: category.name,
       categoryCode: category.id,
       price,
+      moq: body.moq !== undefined && body.moq !== null && !isNaN(Number(body.moq)) ? Number(body.moq) : 1,
       stock,
-      stockStatus: body.stockStatus || deriveStockStatus(stock, body.reorderPoint),
+      stockStatus,
       createdAt: now,
       updatedAt: now,
     };
@@ -486,6 +508,10 @@ export const updateProduct = async (
     const existing = await store.getProductById(id);
     if (!existing) throw new AppError('Product not found', 404);
 
+    if (req.body.moq !== undefined && req.body.moq !== null && !isNaN(Number(req.body.moq))) {
+      updates.moq = Number(req.body.moq);
+    }
+
     /* Re-normalised on update too, so an edited attribute and its display label
        can never drift apart. */
     if (Array.isArray(req.body.variants)) {
@@ -503,11 +529,19 @@ export const updateProduct = async (
       updates.categoryCode = category.id;
     }
 
-    if (req.body.stock !== undefined && req.body.stockStatus === undefined) {
+    if (req.body.stockStatus !== undefined) {
+      updates.stockStatus = req.body.stockStatus;
+    } else if (req.body.stock !== undefined) {
       updates.stockStatus = deriveStockStatus(
         req.body.stock,
         req.body.reorderPoint ?? existing.reorderPoint
       );
+    } else if (Array.isArray(req.body.variants) && req.body.variants.length > 0) {
+      const anyAvailable = req.body.variants.some((v: any) => {
+        const s = String(v.status || '').toLowerCase();
+        return !s.includes('out') && !s.includes('unavail') && !s.includes('sold');
+      });
+      updates.stockStatus = anyAvailable ? 'In Stock' : 'Out of Stock';
     }
 
     const updated = await store.updateProduct(id, updates as Partial<Product>);
