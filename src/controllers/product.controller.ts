@@ -32,6 +32,7 @@ const variantSchema = z.object({
   description: z.string().trim().max(1000, 'A variant description cannot exceed 1000 characters').optional(),
   image: z.string().trim().optional(),
   price: z.number().min(0).optional(),
+  moq: z.number().min(1).optional().default(1),
   stock: z.union([z.string(), z.number()]).optional(),
   capacity: z.number().optional(),
   capacityUnit: z.string().optional(),
@@ -52,6 +53,7 @@ export const createProductSchema = z.object({
        old schema demanded price.positive() and rejected those outright. */
     price: z.number().min(0).optional(),
     originalPrice: z.number().optional(),
+    moq: z.number().min(1).optional().default(1),
     stock: z.number().min(0).optional(),
     stockStatus: z.enum(['In Stock', 'Low Stock', 'Out of Stock']).optional(),
     committed: z.number().optional().default(0),
@@ -66,6 +68,8 @@ export const createProductSchema = z.object({
     description: z.string().optional().default(''),
     variants: z.array(variantSchema).optional().default([]),
     videos: z.array(z.any()).optional().default([]),
+    applicableChargeIds: z.array(z.string()).optional().default([]),
+    applicableDyeIds: z.array(z.string()).optional().default([]),
   }),
 });
 
@@ -77,6 +81,7 @@ export const updateProductSchema = z.object({
     categoryId: z.string().optional(),
     price: z.number().min(0).optional(),
     originalPrice: z.number().optional(),
+    moq: z.number().min(1).optional(),
     stock: z.number().min(0).optional(),
     stockStatus: z.enum(['In Stock', 'Low Stock', 'Out of Stock']).optional(),
     committed: z.number().optional(),
@@ -88,6 +93,8 @@ export const updateProductSchema = z.object({
     description: z.string().optional(),
     variants: z.array(variantSchema).optional(),
     videos: z.array(z.any()).optional(),
+    applicableChargeIds: z.array(z.string()).optional(),
+    applicableDyeIds: z.array(z.string()).optional(),
   }),
 });
 

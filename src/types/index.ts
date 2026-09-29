@@ -73,6 +73,7 @@ export interface ProductVariant {
   /** Optional: a variant can exist before it is priced. */
   price?: number;
   stock?: string;
+  moq?: number;
   status?: 'In Stock' | 'Low Stock' | 'Out of Stock' | 'Unspecified';
 }
 
@@ -81,6 +82,16 @@ export interface ProductVideo {
   duration: string;
   title: string;
   thumbnail: string;
+}
+
+export interface AdditionalCharge {
+  id: string;
+  name: string;
+  price: number;
+  description?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Product {
@@ -97,6 +108,8 @@ export interface Product {
   /** Optional: an offering can be created before it is priced. */
   price?: number;
   originalPrice?: number;
+  /** Minimum Order Quantity (default: 1) */
+  moq?: number;
   /** Optional and NOT defaulted — absent means unknown, not zero. */
   stock?: number;
   /**
@@ -116,6 +129,10 @@ export interface Product {
   description: string;
   variants: ProductVariant[];
   videos: ProductVideo[];
+  /** Applicable Additional Charge IDs (e.g. ['chemical-dye', 'custom-packaging'] or []) */
+  applicableChargeIds?: string[];
+  /** @deprecated alias for applicableChargeIds */
+  applicableDyeIds?: string[];
   createdAt?: string;
   updatedAt?: string;
 }

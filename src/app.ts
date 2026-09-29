@@ -23,6 +23,7 @@ import knowledgeRoutes from './routes/knowledge.routes.js';
 import teamRoutes from './routes/team.routes.js';
 import developerRoutes from './routes/developer.routes.js';
 import operatorRoutes from './routes/operator.routes.js';
+import chargeRoutes from './routes/charge.routes.js';
 import mcpRoutes from './routes/mcp.routes.js';
 import publicRoutes from './routes/public.routes.js';
 
@@ -117,6 +118,8 @@ export const createApp = (): Express => {
   apiRouter.use('/team', teamRoutes);
   apiRouter.use('/developer', developerRoutes);
   apiRouter.use('/operator', operatorRoutes);
+  apiRouter.use('/charges', chargeRoutes);
+  apiRouter.use('/additional-charges', chargeRoutes);
 
   app.use('/api/v1', apiRouter);
 

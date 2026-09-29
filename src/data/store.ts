@@ -8,6 +8,7 @@ import { ScheduleEventModel } from '../models/ScheduleEvent.model.js';
 import { AIAgentModel } from '../models/Agent.model.js';
 import { WebhookEndpointModel } from '../models/Endpoint.model.js';
 import { PlatformConnectionModel } from '../models/PlatformConnection.model.js';
+import { AdditionalChargeModel } from '../models/AdditionalCharge.model.js';
 import {
   User,
   Product,
@@ -19,6 +20,7 @@ import {
   WebhookEndpoint,
   PlatformConnection,
   DashboardMetrics,
+  AdditionalCharge,
 } from '../types/index.js';
 import {
   INITIAL_USERS,
@@ -42,6 +44,7 @@ class DataStore {
   private scheduleEvents: ScheduleEvent[] = [...INITIAL_SCHEDULE_EVENTS];
   private agents: AIAgent[] = [...INITIAL_DEVELOPER_AGENTS];
   private endpoints: WebhookEndpoint[] = [...INITIAL_DEVELOPER_ENDPOINTS];
+  private additionalCharges: AdditionalCharge[] = [];
   /* No seed value: an unconfigured platform connection is the whole point. */
   private platformConnection: PlatformConnection | null = null;
 
@@ -776,6 +779,71 @@ class DataStore {
     this.platformConnection = null;
     return removed;
   }
+
+  // ================= ADDITIONAL CHARGES MASTER (Universal for all domains) =================
+  async getAdditionalCharges(): Promise<AdditionalCharge[]> {
+    if (isDbConnected()) {
+      const docs = await AdditionalChargeModel.find().lean();
+      return (docs || []) as any;
+    }
+    return this.additionalCharges;
+  }
+
+  async getAdditionalChargeById(id: string): Promise<AdditionalCharge | undefined> {
+    if (isDbConnected()) {
+      const doc = await AdditionalChargeModel.findOne({ id }).lean();
+      return (doc as any) ?? undefined;
+    }
+    return this.additionalCharges.find((c) => c.id === id);
+  }
+
+  async createAdditionalCharge(charge: AdditionalCharge): Promise<AdditionalCharge> {
+    if (isDbConnected()) {
+      const created = await AdditionalChargeModel.create(charge);
+      return created.toJSON();
+    }
+    this.additionalCharges.push(charge);
+    return charge;
+  }
+
+  async updateAdditionalCharge(
+    id: string,
+    updates: Partial<AdditionalCharge>
+  ): Promise<AdditionalCharge | undefined> {
+    if (isDbConnected()) {
+      const updated = await AdditionalChargeModel.findOneAndUpdate(
+        { id },
+        { ...updates, updatedAt: new Date().toISOString() },
+        { new: true }
+      ).lean();
+      return (updated as any) ?? undefined;
+    }
+    const idx = this.additionalCharges.findIndex((c) => c.id === id);
+    if (idx === -1) return undefined;
+    this.additionalCharges[idx] = {
+      ...this.additionalCharges[idx],
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    return this.additionalCharges[idx];
+  }
+
+  async deleteAdditionalCharge(id: string): Promise<boolean> {
+    if (isDbConnected()) {
+      const result = await AdditionalChargeModel.deleteOne({ id });
+      return (result.deletedCount ?? 0) > 0;
+    }
+    const before = this.additionalCharges.length;
+    this.additionalCharges = this.additionalCharges.filter((c) => c.id !== id);
+    return this.additionalCharges.length < before;
+  }
+
+  // Aliases for compatibility
+  async getDyes() { return this.getAdditionalCharges(); }
+  async getDyeById(id: string) { return this.getAdditionalChargeById(id); }
+  async createDye(charge: any) { return this.createAdditionalCharge(charge); }
+  async updateDye(id: string, updates: any) { return this.updateAdditionalCharge(id, updates); }
+  async deleteDye(id: string) { return this.deleteAdditionalCharge(id); }
 
   // ================= DASHBOARD METRICS =================
   async getDashboardMetrics(): Promise<DashboardMetrics> {

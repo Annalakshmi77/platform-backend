@@ -20,6 +20,8 @@ const ProductVariantSchema = new Schema(
     value: { type: String, required: true },
     /* Optional: a variant can exist before it is priced. */
     price: { type: Number },
+    /* Minimum order quantity for this variant */
+    moq: { type: Number, default: 1 },
     /* No default. '10 units' was invented for every variant nobody gave a
        figure for, so a row could read "Unspecified" and "10 units" at once,
        and the product roll-up disagreed with the variants underneath it. */
@@ -50,6 +52,8 @@ const ProductSchema = new Schema<Product>(
     /* Optional: an offering can be created before it is priced. */
     price: { type: Number },
     originalPrice: { type: Number },
+    /* Minimum Order Quantity */
+    moq: { type: Number, default: 1 },
     /* No default: unset stock means UNKNOWN, and 0 reads as sold out. */
     stock: { type: Number },
     /* Defaults to Unspecified, not In Stock: with no figure entered the
@@ -68,6 +72,8 @@ const ProductSchema = new Schema<Product>(
     gallery: [{ id: Number, label: String, src: String }],
     videos: [{ id: Number, duration: String, title: String, thumbnail: String }],
     variants: [ProductVariantSchema],
+    applicableChargeIds: { type: [String], default: [] },
+    applicableDyeIds: { type: [String], default: [] },
     createdAt: { type: String, default: () => new Date().toISOString() },
     updatedAt: { type: String, default: () => new Date().toISOString() },
   },
