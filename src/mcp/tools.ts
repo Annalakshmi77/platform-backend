@@ -215,6 +215,79 @@ export const mcpTools: Record<string, McpTool> = {
       return { category: publicCategory(category) };
     },
   },
+
+  list_additional_charges: {
+    description:
+      'List all active additional charges (e.g. Chemical Dye, Electric Dye, plate fees, setup charges). ' +
+      'Call this to see which additional charges and dye fees are available in the catalogue.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        search: {
+          type: 'string',
+          description: 'Optional search filter to find a specific charge by name or keyword (e.g. "dye").',
+        },
+      },
+    },
+    handler: async (params) => {
+      const all = await store.getAdditionalCharges();
+      const active = all.filter((c) => c.isActive !== false);
+      const term = String(params.search ?? '').trim().toLowerCase();
+      const matched = term
+        ? active.filter((c) => c.name?.toLowerCase().includes(term) || c.id?.toLowerCase().includes(term))
+        : active;
+
+      if (matched.length === 0) {
+        return {
+          charges: [],
+          total: 0,
+          message: term ? 'No additional charge matched that name.' : 'No additional charges are configured.',
+        };
+      }
+      return {
+        charges: matched.map((c) => ({
+          id: c.id,
+          name: c.name,
+          price: c.price,
+          description: c.description,
+          isActive: c.isActive,
+        })),
+        total: matched.length,
+      };
+    },
+  },
+
+  get_additional_charge: {
+    description:
+      'Fetch the live price and details of a specific additional charge by its id (e.g. "chemical-dye", "electric-dye"). ' +
+      'Use when quoting a dye charge or including it in an order summary.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          description: 'The unique ID of the additional charge (e.g. "chemical-dye", "electric-dye").',
+        },
+      },
+      required: ['id'],
+    },
+    handler: async (params) => {
+      const id = String(params.id ?? '').trim();
+      if (!id) throw new Error('An additional charge id is required.');
+
+      const charge = await store.getAdditionalChargeById(id);
+      if (!charge) {
+        return { charge: null, message: `No additional charge with id "${id}". Call list_additional_charges.` };
+      }
+      return {
+        id: charge.id,
+        name: charge.name,
+        price: charge.price,
+        description: charge.description,
+        isActive: charge.isActive,
+      };
+    },
+  },
 };
 
 export const toolDeclarations = () =>
@@ -223,3 +296,4 @@ export const toolDeclarations = () =>
     description: tool.description,
     inputSchema: tool.inputSchema,
   }));
+
