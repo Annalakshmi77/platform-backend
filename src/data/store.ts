@@ -211,12 +211,21 @@ class DataStore {
 
   async updateProduct(id: string, updates: Partial<Product>): Promise<Product | undefined> {
     if (isDbConnected()) {
-      const updated = await ProductModel.findOneAndUpdate({ id }, updates, { new: true }).lean();
+      let mongoUpdate: any = updates;
+      if ((updates as any).$unset) {
+        const { $unset, ...rest } = updates as any;
+        mongoUpdate = { $set: rest, $unset };
+      }
+      const updated = await ProductModel.findOneAndUpdate({ id }, mongoUpdate, { new: true }).lean();
       return (updated as any) ?? undefined;
     }
     const index = this.products.findIndex((p) => p.id === id);
     if (index === -1) return undefined;
-    this.products[index] = { ...this.products[index], ...updates, updatedAt: new Date().toISOString() };
+    const { $unset, ...rest } = updates as any;
+    this.products[index] = { ...this.products[index], ...rest, updatedAt: new Date().toISOString() };
+    if ($unset?.moq) {
+      delete (this.products[index] as any).moq;
+    }
     return this.products[index];
   }
 

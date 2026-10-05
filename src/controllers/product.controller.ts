@@ -53,7 +53,7 @@ export const createProductSchema = z.object({
        old schema demanded price.positive() and rejected those outright. */
     price: z.number().min(0).optional(),
     originalPrice: z.number().optional(),
-    moq: z.number().min(1).optional().default(1),
+    moq: z.number().min(1).optional(),
     stock: z.number().min(0).optional(),
     stockStatus: z.enum(['In Stock', 'Low Stock', 'Out of Stock']).optional(),
     committed: z.number().optional().default(0),
@@ -487,6 +487,11 @@ export const createProduct = async (
       }
     }
 
+    const hasVariants = Array.isArray(variants) && variants.length > 0;
+    const moq = !hasVariants && body.moq !== undefined && body.moq !== null && !isNaN(Number(body.moq))
+      ? Number(body.moq)
+      : undefined;
+
     const now = new Date().toISOString();
     const newProduct: Product = {
       ...body,
@@ -497,7 +502,7 @@ export const createProduct = async (
       category: category.name,
       categoryCode: category.id,
       price,
-      moq: body.moq !== undefined && body.moq !== null && !isNaN(Number(body.moq)) ? Number(body.moq) : 1,
+      moq,
       stock,
       stockStatus,
       createdAt: now,
@@ -524,7 +529,13 @@ export const updateProduct = async (
     const existing = await store.getProductById(id);
     if (!existing) throw new AppError('Product not found', 404);
 
-    if (req.body.moq !== undefined && req.body.moq !== null && !isNaN(Number(req.body.moq))) {
+    const hasVariants = (Array.isArray(req.body.variants) && req.body.variants.length > 0) ||
+      (!req.body.variants && Array.isArray(existing.variants) && existing.variants.length > 0);
+
+    if (hasVariants) {
+      delete updates.moq;
+      (updates as any).$unset = { ...((updates as any).$unset || {}), moq: 1 };
+    } else if (req.body.moq !== undefined && req.body.moq !== null && !isNaN(Number(req.body.moq))) {
       updates.moq = Number(req.body.moq);
     }
 

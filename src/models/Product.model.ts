@@ -53,8 +53,8 @@ const ProductSchema = new Schema<Product>(
     /* Optional: an offering can be created before it is priced. */
     price: { type: Number },
     originalPrice: { type: Number },
-    /* Minimum Order Quantity */
-    moq: { type: Number, default: 1 },
+    /* Minimum Order Quantity (Only for simple products without variants) */
+    moq: { type: Number },
     /* No default: unset stock means UNKNOWN, and 0 reads as sold out. */
     stock: { type: Number },
     /* Defaults to Unspecified, not In Stock: with no figure entered the
