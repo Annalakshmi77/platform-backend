@@ -57,6 +57,7 @@ export const publicProduct = (p: Product | undefined): Record<string, any> | und
       ...(v.description ? { description: v.description } : {}),
       ...(v.image ? { image: v.image } : {}),
       price: v.price ?? null,
+      moq: v.moq !== undefined && v.moq !== null && !isNaN(Number(v.moq)) ? Number(v.moq) : 1,
       stock: v.stock ?? null,
       status: v.status ?? 'Unspecified',
     }));
