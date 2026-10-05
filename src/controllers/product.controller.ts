@@ -214,8 +214,15 @@ const normaliseVariants = (variants: any[], productSku: string): any[] => {
     /* Empty strings are not stored: an absent description is absent, not "". */
     const description = String(raw?.description ?? '').trim();
     if (description) out.description = description;
-    const image = String(raw?.image ?? '').trim();
+    const image = String(
+      raw?.image || (Array.isArray(raw?.images) && raw.images.length ? raw.images[0] : '') || ''
+    ).trim();
     if (image) out.image = image;
+    if (Array.isArray(raw?.images) && raw.images.length) {
+      out.images = raw.images;
+    } else if (image) {
+      out.images = [image];
+    }
 
     return out;
   });
@@ -472,9 +479,18 @@ export const createProduct = async (
       }
     }
 
+    let productImage = String(body.image ?? '').trim();
+    if (!productImage && Array.isArray(variants) && variants.length > 0) {
+      const vWithImg = variants.find((v: any) => v.image || (Array.isArray(v.images) && v.images[0]));
+      if (vWithImg) {
+        productImage = vWithImg.image || vWithImg.images[0];
+      }
+    }
+
     const now = new Date().toISOString();
     const newProduct: Product = {
       ...body,
+      image: productImage,
       variants,
       id: body.sku,
       categoryId: category.id,
@@ -519,6 +535,13 @@ export const updateProduct = async (
         req.body.variants,
         String(req.body.sku ?? existing.sku ?? id)
       );
+
+      if (!updates.image && !existing.image) {
+        const vWithImg = (updates.variants as any[]).find((v: any) => v.image || (Array.isArray(v.images) && v.images[0]));
+        if (vWithImg) {
+          updates.image = vWithImg.image || vWithImg.images[0];
+        }
+      }
     }
 
     /* Re-pointing at another category carries its name across. */

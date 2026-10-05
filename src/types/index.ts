@@ -70,6 +70,7 @@ export interface ProductVariant {
   description?: string;
   /** This combination's own picture. */
   image?: string;
+  images?: string[];
   /** Optional: a variant can exist before it is priced. */
   price?: number;
   stock?: string;

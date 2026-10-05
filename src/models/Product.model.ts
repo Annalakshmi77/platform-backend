@@ -16,6 +16,7 @@ const ProductVariantSchema = new Schema(
     attributes: { type: [VariantAttributeSchema], default: undefined },
     description: { type: String, default: '' },
     image: { type: String, default: '' },
+    images: { type: [String], default: undefined },
     option: { type: String, required: true },
     value: { type: String, required: true },
     /* Optional: a variant can exist before it is priced. */
